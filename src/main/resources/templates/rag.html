@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Semantic RAG</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: #f0f2f5;
+        display: flex;
+        justify-content: center;
+        min-height: 100vh;
+        padding: 24px;
+    }
+    .container { width: 100%; max-width: 720px; display: flex; flex-direction: column; gap: 20px; }
+    header {
+        padding: 14px 20px;
+        background: #4a3aff;
+        color: #fff;
+        font-weight: 600;
+        border-radius: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    header a { color: #fff; font-size: 13px; font-weight: 400; opacity: .85; }
+    .card {
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 0 20px rgba(0,0,0,.08);
+        padding: 18px 20px;
+    }
+    .card h2 { font-size: 16px; margin-bottom: 4px; }
+    .card .desc { font-size: 13px; color: #888; margin-bottom: 14px; }
+    .fields { display: flex; gap: 10px; flex-wrap: wrap; }
+    input {
+        flex: 1;
+        min-width: 120px;
+        padding: 10px 14px;
+        border: 1px solid #ccd0d5;
+        border-radius: 20px;
+        font-size: 14px;
+        outline: none;
+    }
+    input:focus { border-color: #4a3aff; }
+    button {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 20px;
+        background: #4a3aff;
+        color: #fff;
+        font-size: 14px;
+        cursor: pointer;
+    }
+    button:disabled { opacity: .5; cursor: default; }
+    .result {
+        margin-top: 14px;
+        padding: 12px 14px;
+        border-radius: 8px;
+        background: #e9ebee;
+        line-height: 1.45;
+        white-space: pre-wrap;
+        display: none;
+    }
+    .result.show { display: block; }
+    .result.error { background: #fdecea; color: #b71c1c; }
+    .result.thinking { color: #888; font-style: italic; }
+    #sources { margin-top: 14px; display: none; flex-direction: column; gap: 8px; }
+    #sources.show { display: flex; }
+    #sources h3 { font-size: 13px; color: #666; font-weight: 600; }
+    .source {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        padding: 10px 12px;
+        border-radius: 8px;
+        background: #f7f8fa;
+        border: 1px solid #e4e6eb;
+        font-size: 13px;
+        line-height: 1.4;
+        white-space: pre-wrap;
+    }
+    .score {
+        flex-shrink: 0;
+        min-width: 46px;
+        padding: 2px 8px;
+        border-radius: 10px;
+        background: #4a3aff;
+        color: #fff;
+        font-size: 12px;
+        font-weight: 600;
+        text-align: center;
+    }
+</style>
+</head>
+<body>
+<div class="container">
+    <header>
+        Semantic RAG
+        <span><a href="/">← Chat</a><a href="/demo" style="margin-left:12px">Demos</a></span>
+    </header>
+
+    <div class="card">
+        <h2>Ask the Employee Handbook</h2>
+        <div class="desc">Semantic search over policy.md — matches on meaning, not keywords — GET /rag/ask</div>
+        <div class="fields">
+            <input id="rag-question" type="text" placeholder="e.g. how much time off do I get?">
+            <button onclick="ask()">Ask</button>
+        </div>
+        <div class="result" id="rag-result"></div>
+        <div id="sources"></div>
+    </div>
+
+    <div class="card">
+        <h2>Cosine Similarity</h2>
+        <div class="desc">Embed two texts with all-MiniLM-L6-v2 and compare them — GET /rag/similarity</div>
+        <div class="fields">
+            <input id="sim-text1" type="text" placeholder="text1 (e.g. cat)">
+            <input id="sim-text2" type="text" placeholder="text2 (e.g. kitten)">
+            <button onclick="compare()">Compare</button>
+        </div>
+        <div class="result" id="sim-result"></div>
+    </div>
+</div>
+
+<script>
+    async function ask() {
+        const question = document.getElementById('rag-question').value.trim();
+        const resultEl = document.getElementById('rag-result');
+        const sourcesEl = document.getElementById('sources');
+        sourcesEl.className = '';
+        sourcesEl.innerHTML = '';
+        resultEl.className = 'result show thinking';
+        resultEl.textContent = 'Thinking…';
+        const params = new URLSearchParams();
+        if (question) params.set('question', question);
+        try {
+            const res = await fetch('/rag/ask?' + params.toString());
+            const body = await res.text();
+            resultEl.className = 'result show' + (res.ok ? '' : ' error');
+            resultEl.textContent = res.ok ? body : 'Error ' + res.status + ': ' + body;
+            loadSources(params);
+        } catch (err) {
+            resultEl.className = 'result show error';
+            resultEl.textContent = 'Request failed: ' + err.message;
+        }
+    }
+
+    async function loadSources(params) {
+        try {
+            const res = await fetch('/rag/sources?' + params.toString());
+            if (!res.ok) return;
+            const hits = await res.json();
+            const sourcesEl = document.getElementById('sources');
+            if (!hits.length) {
+                sourcesEl.innerHTML = '<h3>No sections above the similarity threshold.</h3>';
+            } else {
+                sourcesEl.innerHTML = '<h3>Retrieved sections (cosine similarity)</h3>' +
+                    hits.map(h =>
+                        '<div class="source"><span class="score">' + h.score.toFixed(3) +
+                        '</span><span></span></div>'
+                    ).join('');
+                // Set text via textContent to avoid injecting markup from policy.md
+                sourcesEl.querySelectorAll('.source span:last-child').forEach((el, i) => {
+                    el.textContent = hits[i].text;
+                });
+            }
+            sourcesEl.className = 'show';
+        } catch (err) { /* sources are best-effort */ }
+    }
+
+    async function compare() {
+        const resultEl = document.getElementById('sim-result');
+        const params = new URLSearchParams({
+            text1: document.getElementById('sim-text1').value.trim(),
+            text2: document.getElementById('sim-text2').value.trim()
+        });
+        resultEl.className = 'result show thinking';
+        resultEl.textContent = 'Embedding…';
+        try {
+            const res = await fetch('/rag/similarity?' + params.toString());
+            const body = await res.text();
+            resultEl.className = 'result show' + (res.ok ? '' : ' error');
+            resultEl.textContent = res.ok ? body : 'Error ' + res.status + ': ' + body;
+        } catch (err) {
+            resultEl.className = 'result show error';
+            resultEl.textContent = 'Request failed: ' + err.message;
+        }
+    }
+</script>
+</body>
+</html>

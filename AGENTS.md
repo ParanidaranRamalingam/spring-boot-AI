@@ -29,3 +29,7 @@
 - Tool functions are `@Tool`-annotated methods on `@Component` classes (see
   `WeatherTools`), registered per call via `.toolCallbacks(ToolCallbacks.from(...))`;
   `ToolCallbacks` lives in `org.springframework.ai.support` in Spring AI 2.x
+- Embeddings use `spring-ai-starter-model-transformers` (local ONNX
+  all-MiniLM-L6-v2, no API key); the ~90 MB model downloads once to a temp
+  cache on first startup. RAG advisor classes live in the `spring-ai-rag`
+  module under `org.springframework.ai.rag.*` (see `RagController`)

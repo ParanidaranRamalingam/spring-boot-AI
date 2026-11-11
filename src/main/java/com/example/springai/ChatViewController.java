@@ -26,6 +26,16 @@ public class ChatViewController {
         return "demo";
     }
 
+    @GetMapping("/rag")
+    public String ragPage() {
+        return "rag";
+    }
+
+    @GetMapping("/memory")
+    public String memoryPage() {
+        return "memory";
+    }
+
     @PostMapping("/")
     public String sendMessage(@RequestParam String message, Model model) {
         model.addAttribute("userMessage", message);
