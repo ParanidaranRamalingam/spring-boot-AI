@@ -34,6 +34,13 @@ class ChatViewControllerTest {
     }
 
     @Test
+    void demoPage_getDemo_returnsDemoView() throws Exception {
+        mockMvc.perform(get("/demo"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("demo"));
+    }
+
+    @Test
     void sendMessage_validMessage_addsUserMessageAndResponseToModel() throws Exception {
         ChatClient chatClient = chatClientBuilder.build();
         when(chatClient.prompt().user(anyString()).call().content()).thenReturn("AI says hi");

@@ -21,6 +21,11 @@ public class ChatViewController {
         return "chat";
     }
 
+    @GetMapping("/demo")
+    public String demoPage() {
+        return "demo";
+    }
+
     @PostMapping("/")
     public String sendMessage(@RequestParam String message, Model model) {
         model.addAttribute("userMessage", message);

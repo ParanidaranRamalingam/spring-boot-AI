@@ -23,8 +23,9 @@
 ## Spring AI
 - The Anthropic base URL points at a Bedrock gateway (`ANTHROPIC_BASE_URL`), so
   model IDs use the `global.anthropic.*` Bedrock format, not Anthropic-native names
-- Reusable prompt templates are `PromptTemplate` beans in `PromptTemplateConfig`,
-  rendered with `.create(Map.of(...))` at call time (see `PromptDemoController`)
+- Prompt templating is demonstrated two ways in `PromptDemoController`:
+  `PromptTemplate.create(Map.of(...))` (/joke) and the fluent
+  `user(u -> u.text(...).param(...))` binding (/travel-guide)
 - Tool functions are `@Tool`-annotated methods on `@Component` classes (see
   `WeatherTools`), registered per call via `.toolCallbacks(ToolCallbacks.from(...))`;
   `ToolCallbacks` lives in `org.springframework.ai.support` in Spring AI 2.x

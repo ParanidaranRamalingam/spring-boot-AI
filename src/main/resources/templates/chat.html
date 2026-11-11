@@ -26,8 +26,11 @@
         background: #4a3aff;
         color: #fff;
         font-weight: 600;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
-    header small { display: block; font-weight: 400; opacity: .8; font-size: 12px; }
+    header a { color: #fff; font-size: 13px; font-weight: 400; opacity: .85; }
     #messages {
         flex: 1;
         overflow-y: auto;
@@ -87,8 +90,8 @@
 <body>
 <div class="chat-container">
     <header>
-        Claude Chat
-        <small>global.anthropic.claude-haiku-4-5 via llmgw-wp.tekstac.com</small>
+        <span>Claude Chat<br><small>global.anthropic.claude-haiku-4-5 via llmgw-wp.tekstac.com</small></span>
+        <a href="/demo">Demos →</a>
     </header>
     <div id="messages">
         <div class="hint" th:if="${userMessage == null}">Send a message to start chatting.</div>

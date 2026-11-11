@@ -26,12 +26,15 @@ Then open http://localhost:8081 — the Thymeleaf chat page posts to `/` and sho
 curl "http://localhost:8081/chat?message=Hello"
 
 # Prompt-template demos (placeholders filled at runtime)
-curl "http://localhost:8081/joke?adjective=sarcastic"
-curl "http://localhost:8081/travel?city=Tokyo&days=2"
+curl "http://localhost:8081/joke?adjective=sarcastic&topic=programming"
+curl "http://localhost:8081/travel-guide?city=Tokyo&days=2"
 
-# Tool calling — the model invokes WeatherTools.getCurrentWeather (stubbed)
+# Tool calling — the model invokes WeatherTools.getCurrentWeather (Open-Meteo)
 curl "http://localhost:8081/weather?city=London"
 ```
+
+A second UI page at http://localhost:8081/demo hosts the joke, travel-guide,
+and weather demos (fetch-based, no page reload).
 
 ## Configuration
 
@@ -49,7 +52,8 @@ come from env vars:
 
 - Spring Boot 4.1.2, Spring AI 2.0.1, Java 21, Thymeleaf
 - Code: `src/main/java/com/example/springai/` — `ChatController` (REST),
-  `ChatViewController` (Thymeleaf view), `PromptDemoController` (joke/travel/weather),
-  `PromptTemplateConfig` (reusable `PromptTemplate` beans), `WeatherTools` (`@Tool`)
-- Template: `src/main/resources/templates/chat.html`
+  `ChatViewController` (Thymeleaf views), `PromptDemoController`
+  (joke/travel-guide/weather), `WeatherTools` (`@Tool` + RestClient → Open-Meteo)
+- Templates: `src/main/resources/templates/chat.html` (general chat),
+  `demo.html` (prompt-template + weather demos)
 - Model IDs use the `global.anthropic.*` Bedrock format expected by the gateway

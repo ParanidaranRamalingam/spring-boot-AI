@@ -1,14 +1,16 @@
 package com.example.springai;
 
+import java.util.function.Consumer;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Answers;
+import org.mockito.ArgumentCaptor;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockReset;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -16,7 +18,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -24,7 +28,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(PromptDemoController.class)
-@Import(PromptTemplateConfig.class)
 class PromptDemoControllerTest {
 
     @Autowired
@@ -43,29 +46,36 @@ class PromptDemoControllerTest {
     }
 
     @Test
-    void joke_adjectiveParam_passesAdjectiveToTemplate() throws Exception {
+    void joke_adjectiveAndTopicParams_passesBothToTemplate() throws Exception {
         ChatClient chatClient = chatClientBuilder.build();
         when(chatClient.prompt(any(Prompt.class)).call().content()).thenReturn("A silly joke");
 
-        mockMvc.perform(get("/joke").param("adjective", "silly"))
+        mockMvc.perform(get("/joke").param("adjective", "silly").param("topic", "cats"))
                 .andExpect(status().isOk())
                 .andExpect(content().string("A silly joke"));
 
-        verify(chatClient).prompt(argThat((Prompt p) -> p != null && p.getContents().contains("silly")));
+        verify(chatClient).prompt(argThat((Prompt p) -> p != null
+                && p.getContents().contains("silly")
+                && p.getContents().contains("cats")));
     }
 
     @Test
-    void travel_cityAndDays_passesBothToTemplate() throws Exception {
+    void travelGuide_cityAndDays_bindsBothParams() throws Exception {
         ChatClient chatClient = chatClientBuilder.build();
-        when(chatClient.prompt(any(Prompt.class)).call().content()).thenReturn("Itinerary");
+        when(chatClient.prompt().user(any(Consumer.class)).call().content()).thenReturn("Itinerary");
+        clearInvocations(chatClient.prompt());
 
-        mockMvc.perform(get("/travel").param("city", "Paris").param("days", "3"))
+        mockMvc.perform(get("/travel-guide").param("city", "Paris").param("days", "5"))
                 .andExpect(status().isOk())
                 .andExpect(content().string("Itinerary"));
 
-        verify(chatClient).prompt(argThat((Prompt p) -> p != null
-                && p.getContents().contains("Paris")
-                && p.getContents().contains("3")));
+        ArgumentCaptor<Consumer> captor = ArgumentCaptor.forClass(Consumer.class);
+        verify(chatClient.prompt()).user(captor.capture());
+        ChatClient.PromptUserSpec spec = mock(ChatClient.PromptUserSpec.class, Answers.RETURNS_SELF);
+        captor.getValue().accept(spec);
+        verify(spec).text(contains("{city}"));
+        verify(spec).param("city", "Paris");
+        verify(spec).param("days", 5);
     }
 
     @Test
