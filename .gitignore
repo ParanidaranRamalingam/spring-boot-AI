@@ -1,0 +1,5 @@
+target/
+local.properties
+*.class
+*.iml
+.idea/
