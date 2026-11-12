@@ -4,105 +4,43 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Claude Chat</title>
-<style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        background: #f0f2f5;
-        display: flex;
-        justify-content: center;
-        height: 100vh;
-    }
-    .chat-container {
-        width: 100%;
-        max-width: 720px;
-        display: flex;
-        flex-direction: column;
-        background: #fff;
-        box-shadow: 0 0 20px rgba(0,0,0,.08);
-    }
-    header {
-        padding: 14px 20px;
-        background: #4a3aff;
-        color: #fff;
-        font-weight: 600;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    header a { color: #fff; font-size: 13px; font-weight: 400; opacity: .85; }
-    #messages {
-        flex: 1;
-        overflow-y: auto;
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-    }
-    .msg {
-        max-width: 80%;
-        padding: 10px 14px;
-        border-radius: 14px;
-        line-height: 1.45;
-        white-space: pre-wrap;
-        word-wrap: break-word;
-    }
-    .msg.user {
-        align-self: flex-end;
-        background: #4a3aff;
-        color: #fff;
-        border-bottom-right-radius: 4px;
-    }
-    .msg.assistant {
-        align-self: flex-start;
-        background: #e9ebee;
-        color: #1c1e21;
-        border-bottom-left-radius: 4px;
-    }
-    .msg.error { background: #fdecea; color: #b71c1c; }
-    .hint { color: #999; font-size: 14px; margin: auto; }
-    form {
-        display: flex;
-        gap: 10px;
-        padding: 14px;
-        border-top: 1px solid #e4e6eb;
-    }
-    input[name="message"] {
-        flex: 1;
-        padding: 12px 14px;
-        border: 1px solid #ccd0d5;
-        border-radius: 22px;
-        font-size: 15px;
-        outline: none;
-    }
-    input[name="message"]:focus { border-color: #4a3aff; }
-    button {
-        padding: 0 22px;
-        border: none;
-        border-radius: 22px;
-        background: #4a3aff;
-        color: #fff;
-        font-size: 15px;
-        cursor: pointer;
-    }
-</style>
+<link rel="stylesheet" th:href="@{/css/app.css}">
 </head>
 <body>
-<div class="chat-container">
-    <header>
-        <span>Claude Chat<br><small>global.anthropic.claude-haiku-4-5 via llmgw-wp.tekstac.com</small></span>
-        <span><a href="/demo">Demos</a><a href="/rag" style="margin-left:12px">RAG</a><a href="/memory" style="margin-left:12px">Memory →</a></span>
+<div class="container container--chat">
+    <header class="topbar">
+        <div class="brand">Claude Chat<small>global.anthropic.claude-haiku-4-5 · llmgw-wp.tekstac.com</small></div>
+        <nav class="nav">
+            <a href="/demo">Demos</a>
+            <a href="/rag">RAG</a>
+            <a href="/memory">Memory</a>
+        </nav>
     </header>
-    <div id="messages">
-        <div class="hint" th:if="${userMessage == null}">Send a message to start chatting.</div>
-        <div class="msg user" th:if="${userMessage != null}" th:text="${userMessage}"></div>
-        <div class="msg assistant" th:if="${response != null}" th:text="${response}"></div>
-        <div class="msg error" th:if="${error != null}" th:text="'Error: ' + ${error}"></div>
+    <div class="chips">
+        <span class="chips-label">Try:</span>
+        <button class="chip" onclick="useExample(this)">Tell me a fun fact about Spring Boot</button>
+        <button class="chip" onclick="useExample(this)">Explain microservices in one sentence</button>
+        <button class="chip" onclick="useExample(this)">Write a haiku about Java</button>
     </div>
-    <form method="post" action="/">
-        <input name="message" type="text" placeholder="Type a message..." autocomplete="off" autofocus required>
-        <button type="submit">Send</button>
-    </form>
+    <div class="card chat-shell">
+        <div id="messages">
+            <div class="hint" th:if="${userMessage == null}">Send a message or tap an example above to start chatting.</div>
+            <div class="msg user" th:if="${userMessage != null}" th:text="${userMessage}"></div>
+            <div class="msg assistant" th:if="${response != null}" th:text="${response}"></div>
+            <div class="msg error" th:if="${error != null}" th:text="'Error: ' + ${error}"></div>
+        </div>
+        <form class="composer" method="post" action="/">
+            <input name="message" type="text" placeholder="Type a message..." autocomplete="off" autofocus required>
+            <button class="btn" type="submit">Send</button>
+        </form>
+    </div>
 </div>
+<script>
+    function useExample(el) {
+        const input = document.querySelector('input[name="message"]');
+        input.value = el.textContent;
+        input.closest('form').requestSubmit();
+    }
+</script>
 </body>
 </html>

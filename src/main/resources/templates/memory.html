@@ -4,135 +4,54 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Chat Memory</title>
-<style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        background: #f0f2f5;
-        display: flex;
-        justify-content: center;
-        height: 100vh;
-    }
-    .chat-container {
-        width: 100%;
-        max-width: 720px;
-        display: flex;
-        flex-direction: column;
-        background: #fff;
-        box-shadow: 0 0 20px rgba(0,0,0,.08);
-    }
-    header {
-        padding: 14px 20px;
-        background: #4a3aff;
-        color: #fff;
-        font-weight: 600;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    header a { color: #fff; font-size: 13px; font-weight: 400; opacity: .85; }
-    .conv-bar {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 10px 14px;
-        background: #f7f8fa;
-        border-bottom: 1px solid #e4e6eb;
-        font-size: 13px;
-        color: #555;
-    }
-    .conv-bar input {
-        width: 160px;
-        padding: 6px 12px;
-        border: 1px solid #ccd0d5;
-        border-radius: 16px;
-        font-size: 13px;
-        outline: none;
-    }
-    .conv-bar input:focus { border-color: #4a3aff; }
-    .conv-bar .tip { color: #999; font-size: 12px; }
-    #messages {
-        flex: 1;
-        overflow-y: auto;
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-    }
-    .msg {
-        max-width: 80%;
-        padding: 10px 14px;
-        border-radius: 14px;
-        line-height: 1.45;
-        white-space: pre-wrap;
-        word-wrap: break-word;
-    }
-    .msg.user {
-        align-self: flex-end;
-        background: #4a3aff;
-        color: #fff;
-        border-bottom-right-radius: 4px;
-    }
-    .msg.assistant {
-        align-self: flex-start;
-        background: #e9ebee;
-        color: #1c1e21;
-        border-bottom-left-radius: 4px;
-    }
-    .msg.error { background: #fdecea; color: #b71c1c; }
-    .msg.thinking { color: #888; font-style: italic; }
-    .hint { color: #999; font-size: 14px; margin: auto; }
-    form {
-        display: flex;
-        gap: 10px;
-        padding: 14px;
-        border-top: 1px solid #e4e6eb;
-    }
-    input[name="message"] {
-        flex: 1;
-        padding: 12px 14px;
-        border: 1px solid #ccd0d5;
-        border-radius: 22px;
-        font-size: 15px;
-        outline: none;
-    }
-    input[name="message"]:focus { border-color: #4a3aff; }
-    button {
-        padding: 0 22px;
-        border: none;
-        border-radius: 22px;
-        background: #4a3aff;
-        color: #fff;
-        font-size: 15px;
-        cursor: pointer;
-    }
-    button:disabled { opacity: .5; }
-</style>
+<link rel="stylesheet" th:href="@{/css/app.css}">
 </head>
 <body>
-<div class="chat-container">
-    <header>
-        <span>Chat Memory<br><small>MessageChatMemoryAdvisor + MessageWindowChatMemory (last 20 msgs)</small></span>
-        <span><a href="/">← Chat</a><a href="/rag" style="margin-left:12px">RAG</a><a href="/demo" style="margin-left:12px">Demos</a></span>
+<div class="container container--chat">
+    <header class="topbar">
+        <div class="brand">Chat Memory<small>MessageChatMemoryAdvisor · MessageWindowChatMemory (last 20 msgs)</small></div>
+        <nav class="nav">
+            <a href="/">Chat</a>
+            <a href="/rag">RAG</a>
+            <a href="/demo">Demos</a>
+        </nav>
     </header>
-    <div class="conv-bar">
-        <label for="conv-id">conversationId:</label>
-        <input id="conv-id" type="text" value="demo" onchange="loadHistory()">
-        <span class="tip">Same id remembers — a different id starts fresh.</span>
+    <div class="chips">
+        <span class="chips-label">Try:</span>
+        <button class="chip" onclick="useExample(this)">My name is Ada and I like hiking</button>
+        <button class="chip" onclick="useExample(this)">What's my name?</button>
+        <button class="chip" onclick="useExample(this)">What hobby did I mention?</button>
     </div>
-    <div id="messages">
-        <div class="hint">Try "my name is Ada and I like hiking", then "what's my name?"</div>
+    <div class="card chat-shell">
+        <div class="conv-bar">
+            <label for="conv-id">conversationId:</label>
+            <input id="conv-id" type="text" value="demo" onchange="loadHistory()">
+            <button type="button" class="ghost" id="hist-btn" onclick="toggleHistory()">Show history</button>
+            <span class="tip">Same id remembers — a different id starts fresh.</span>
+        </div>
+        <div id="history-panel"></div>
+        <div id="messages">
+            <div class="hint">Try "My name is Ada and I like hiking", then "What's my name?"</div>
+        </div>
+        <form class="composer" onsubmit="send(event)">
+            <input name="message" type="text" placeholder="Type a message..." autocomplete="off" autofocus required>
+            <button class="btn" id="send-btn" type="submit">Send</button>
+        </form>
     </div>
-    <form onsubmit="send(event)">
-        <input name="message" type="text" placeholder="Type a message..." autocomplete="off" autofocus required>
-        <button id="send-btn" type="submit">Send</button>
-    </form>
 </div>
 
 <script>
     const messagesEl = document.getElementById('messages');
     const convInput = document.getElementById('conv-id');
     const sendBtn = document.getElementById('send-btn');
+    const histBtn = document.getElementById('hist-btn');
+    const histPanel = document.getElementById('history-panel');
+
+    function useExample(el) {
+        const input = document.querySelector('input[name="message"]');
+        input.value = el.textContent;
+        input.closest('form').requestSubmit();
+    }
 
     function renderHistory(items) {
         messagesEl.innerHTML = '';
@@ -149,12 +68,47 @@
         messagesEl.scrollTop = messagesEl.scrollHeight;
     }
 
+    function renderHistoryPanel(items) {
+        if (!items.length) {
+            histPanel.innerHTML = '<div class="hist-empty">No stored messages for this conversationId.</div>';
+            return;
+        }
+        histPanel.innerHTML = '';
+        for (const item of items) {
+            const row = document.createElement('div');
+            row.className = 'hist-row';
+            const role = document.createElement('span');
+            role.className = 'hist-role';
+            role.textContent = item.role;
+            const text = document.createElement('span');
+            text.className = 'hist-text';
+            text.textContent = item.text;
+            row.append(role, text);
+            histPanel.appendChild(row);
+        }
+    }
+
+    async function fetchHistory() {
+        const res = await fetch('/memory/history?conversationId=' +
+            encodeURIComponent(convInput.value.trim() || 'demo'));
+        return res.ok ? await res.json() : [];
+    }
+
     async function loadHistory() {
         try {
-            const res = await fetch('/memory/history?conversationId=' +
-                encodeURIComponent(convInput.value.trim() || 'demo'));
-            if (res.ok) renderHistory(await res.json());
+            const items = await fetchHistory();
+            renderHistory(items);
+            if (histPanel.classList.contains('show')) renderHistoryPanel(items);
         } catch (err) { /* history is best-effort */ }
+    }
+
+    async function toggleHistory() {
+        const showing = histPanel.classList.toggle('show');
+        histBtn.textContent = showing ? 'Hide history' : 'Show history';
+        if (showing) {
+            histPanel.innerHTML = '<div class="hist-empty">Loading…</div>';
+            renderHistoryPanel(await fetchHistory());
+        }
     }
 
     async function send(event) {

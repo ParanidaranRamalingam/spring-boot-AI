@@ -4,86 +4,31 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Spring AI Demos</title>
-<style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        background: #f0f2f5;
-        display: flex;
-        justify-content: center;
-        min-height: 100vh;
-        padding: 24px;
-    }
-    .container { width: 100%; max-width: 720px; display: flex; flex-direction: column; gap: 20px; }
-    header {
-        padding: 14px 20px;
-        background: #4a3aff;
-        color: #fff;
-        font-weight: 600;
-        border-radius: 10px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    header a { color: #fff; font-size: 13px; font-weight: 400; opacity: .85; }
-    .card {
-        background: #fff;
-        border-radius: 10px;
-        box-shadow: 0 0 20px rgba(0,0,0,.08);
-        padding: 18px 20px;
-    }
-    .card h2 { font-size: 16px; margin-bottom: 4px; }
-    .card .desc { font-size: 13px; color: #888; margin-bottom: 14px; }
-    .fields { display: flex; gap: 10px; flex-wrap: wrap; }
-    input {
-        flex: 1;
-        min-width: 120px;
-        padding: 10px 14px;
-        border: 1px solid #ccd0d5;
-        border-radius: 20px;
-        font-size: 14px;
-        outline: none;
-    }
-    input:focus { border-color: #4a3aff; }
-    input.short { max-width: 110px; }
-    button {
-        padding: 10px 20px;
-        border: none;
-        border-radius: 20px;
-        background: #4a3aff;
-        color: #fff;
-        font-size: 14px;
-        cursor: pointer;
-    }
-    button:disabled { opacity: .5; cursor: default; }
-    .result {
-        margin-top: 14px;
-        padding: 12px 14px;
-        border-radius: 8px;
-        background: #e9ebee;
-        line-height: 1.45;
-        white-space: pre-wrap;
-        display: none;
-    }
-    .result.show { display: block; }
-    .result.error { background: #fdecea; color: #b71c1c; }
-    .result.thinking { color: #888; font-style: italic; }
-</style>
+<link rel="stylesheet" th:href="@{/css/app.css}">
 </head>
 <body>
 <div class="container">
-    <header>
-        Spring AI Demos
-        <a href="/">← General chat</a>
+    <header class="topbar">
+        <div class="brand">Spring AI Demos<small>Prompt templates · tool calling</small></div>
+        <nav class="nav">
+            <a href="/">Chat</a>
+            <a href="/rag">RAG</a>
+            <a href="/memory">Memory</a>
+        </nav>
     </header>
 
     <div class="card">
         <h2>Joke Generator</h2>
         <div class="desc">PromptTemplate with {adjective} and {topic} placeholders — GET /joke</div>
+        <div class="chips" style="margin-bottom:12px">
+            <span class="chips-label">Try:</span>
+            <button class="chip" onclick="example('joke', {adjective:'sarcastic', topic:'programming'}, JOKE_FIELDS)">sarcastic · programming</button>
+            <button class="chip" onclick="example('joke', {adjective:'dark', topic:'meetings'}, JOKE_FIELDS)">dark · meetings</button>
+        </div>
         <div class="fields">
             <input id="joke-adjective" type="text" placeholder="adjective (e.g. sarcastic)">
             <input id="joke-topic" type="text" placeholder="topic (e.g. programming)">
-            <button onclick="callApi('joke', {adjective: 'joke-adjective', topic: 'joke-topic'})">Tell a joke</button>
+            <button class="btn" onclick="callApi('joke', JOKE_FIELDS)">Tell a joke</button>
         </div>
         <div class="result" id="joke-result"></div>
     </div>
@@ -91,10 +36,15 @@
     <div class="card">
         <h2>Travel Guide</h2>
         <div class="desc">Fluent user() template with .param() bindings — GET /travel-guide</div>
+        <div class="chips" style="margin-bottom:12px">
+            <span class="chips-label">Try:</span>
+            <button class="chip" onclick="example('travel-guide', {city:'Tokyo', days:3}, TRAVEL_FIELDS)">Tokyo · 3 days</button>
+            <button class="chip" onclick="example('travel-guide', {city:'Paris', days:5}, TRAVEL_FIELDS)">Paris · 5 days</button>
+        </div>
         <div class="fields">
             <input id="travel-city" type="text" placeholder="city (e.g. Tokyo)">
             <input id="travel-days" class="short" type="number" min="1" max="14" placeholder="days">
-            <button onclick="callApi('travel-guide', {city: 'travel-city', days: 'travel-days'})">Plan trip</button>
+            <button class="btn" onclick="callApi('travel-guide', TRAVEL_FIELDS)">Plan trip</button>
         </div>
         <div class="result" id="travel-guide-result"></div>
     </div>
@@ -102,15 +52,34 @@
     <div class="card">
         <h2>Weather</h2>
         <div class="desc">Tool calling — the model invokes WeatherTools (Open-Meteo) — GET /weather</div>
+        <div class="chips" style="margin-bottom:12px">
+            <span class="chips-label">Try:</span>
+            <button class="chip" onclick="example('weather', {city:'London'}, WEATHER_FIELDS)">London</button>
+            <button class="chip" onclick="example('weather', {city:'Mumbai'}, WEATHER_FIELDS)">Mumbai</button>
+        </div>
         <div class="fields">
             <input id="weather-city" type="text" placeholder="city (e.g. London)">
-            <button onclick="callApi('weather', {city: 'weather-city'})">Check weather</button>
+            <button class="btn" onclick="callApi('weather', WEATHER_FIELDS)">Check weather</button>
         </div>
         <div class="result" id="weather-result"></div>
     </div>
 </div>
 
 <script>
+    const JOKE_FIELDS = {adjective: 'joke-adjective', topic: 'joke-topic'};
+    const TRAVEL_FIELDS = {city: 'travel-city', days: 'travel-days'};
+    const WEATHER_FIELDS = {city: 'weather-city'};
+
+    // Fill the card's inputs with an example, then call the endpoint.
+    function example(path, values, fieldMap) {
+        for (const [param, inputId] of Object.entries(fieldMap)) {
+            if (values[param] !== undefined) {
+                document.getElementById(inputId).value = values[param];
+            }
+        }
+        callApi(path, fieldMap);
+    }
+
     async function callApi(path, fieldMap) {
         const resultEl = document.getElementById(path + '-result');
         const params = new URLSearchParams();

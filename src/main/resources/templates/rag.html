@@ -4,110 +4,31 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Semantic RAG</title>
-<style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        background: #f0f2f5;
-        display: flex;
-        justify-content: center;
-        min-height: 100vh;
-        padding: 24px;
-    }
-    .container { width: 100%; max-width: 720px; display: flex; flex-direction: column; gap: 20px; }
-    header {
-        padding: 14px 20px;
-        background: #4a3aff;
-        color: #fff;
-        font-weight: 600;
-        border-radius: 10px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    header a { color: #fff; font-size: 13px; font-weight: 400; opacity: .85; }
-    .card {
-        background: #fff;
-        border-radius: 10px;
-        box-shadow: 0 0 20px rgba(0,0,0,.08);
-        padding: 18px 20px;
-    }
-    .card h2 { font-size: 16px; margin-bottom: 4px; }
-    .card .desc { font-size: 13px; color: #888; margin-bottom: 14px; }
-    .fields { display: flex; gap: 10px; flex-wrap: wrap; }
-    input {
-        flex: 1;
-        min-width: 120px;
-        padding: 10px 14px;
-        border: 1px solid #ccd0d5;
-        border-radius: 20px;
-        font-size: 14px;
-        outline: none;
-    }
-    input:focus { border-color: #4a3aff; }
-    button {
-        padding: 10px 20px;
-        border: none;
-        border-radius: 20px;
-        background: #4a3aff;
-        color: #fff;
-        font-size: 14px;
-        cursor: pointer;
-    }
-    button:disabled { opacity: .5; cursor: default; }
-    .result {
-        margin-top: 14px;
-        padding: 12px 14px;
-        border-radius: 8px;
-        background: #e9ebee;
-        line-height: 1.45;
-        white-space: pre-wrap;
-        display: none;
-    }
-    .result.show { display: block; }
-    .result.error { background: #fdecea; color: #b71c1c; }
-    .result.thinking { color: #888; font-style: italic; }
-    #sources { margin-top: 14px; display: none; flex-direction: column; gap: 8px; }
-    #sources.show { display: flex; }
-    #sources h3 { font-size: 13px; color: #666; font-weight: 600; }
-    .source {
-        display: flex;
-        gap: 10px;
-        align-items: flex-start;
-        padding: 10px 12px;
-        border-radius: 8px;
-        background: #f7f8fa;
-        border: 1px solid #e4e6eb;
-        font-size: 13px;
-        line-height: 1.4;
-        white-space: pre-wrap;
-    }
-    .score {
-        flex-shrink: 0;
-        min-width: 46px;
-        padding: 2px 8px;
-        border-radius: 10px;
-        background: #4a3aff;
-        color: #fff;
-        font-size: 12px;
-        font-weight: 600;
-        text-align: center;
-    }
-</style>
+<link rel="stylesheet" th:href="@{/css/app.css}">
 </head>
 <body>
 <div class="container">
-    <header>
-        Semantic RAG
-        <span><a href="/">← Chat</a><a href="/demo" style="margin-left:12px">Demos</a></span>
+    <header class="topbar">
+        <div class="brand">Semantic RAG<small>all-MiniLM-L6-v2 embeddings · cosine similarity over policy.md</small></div>
+        <nav class="nav">
+            <a href="/">Chat</a>
+            <a href="/demo">Demos</a>
+            <a href="/memory">Memory</a>
+        </nav>
     </header>
 
     <div class="card">
         <h2>Ask the Employee Handbook</h2>
         <div class="desc">Semantic search over policy.md — matches on meaning, not keywords — GET /rag/ask</div>
+        <div class="chips" style="margin-bottom:12px">
+            <span class="chips-label">Try:</span>
+            <button class="chip" onclick="ask('How many vacation days do I get?')">How many vacation days do I get?</button>
+            <button class="chip" onclick="ask('how much time off do I get?')">how much time off do I get?</button>
+            <button class="chip" onclick="ask('What is the hotel cap in expensive cities?')">hotel cap in expensive cities?</button>
+        </div>
         <div class="fields">
             <input id="rag-question" type="text" placeholder="e.g. how much time off do I get?">
-            <button onclick="ask()">Ask</button>
+            <button class="btn" onclick="ask()">Ask</button>
         </div>
         <div class="result" id="rag-result"></div>
         <div id="sources"></div>
@@ -116,17 +37,24 @@
     <div class="card">
         <h2>Cosine Similarity</h2>
         <div class="desc">Embed two texts with all-MiniLM-L6-v2 and compare them — GET /rag/similarity</div>
+        <div class="chips" style="margin-bottom:12px">
+            <span class="chips-label">Try:</span>
+            <button class="chip" onclick="compare('cat', 'kitten')">cat / kitten</button>
+            <button class="chip" onclick="compare('cat', 'car')">cat / car</button>
+            <button class="chip" onclick="compare('laptop', 'computer')">laptop / computer</button>
+        </div>
         <div class="fields">
             <input id="sim-text1" type="text" placeholder="text1 (e.g. cat)">
             <input id="sim-text2" type="text" placeholder="text2 (e.g. kitten)">
-            <button onclick="compare()">Compare</button>
+            <button class="btn" onclick="compare()">Compare</button>
         </div>
         <div class="result" id="sim-result"></div>
     </div>
 </div>
 
 <script>
-    async function ask() {
+    async function ask(preset) {
+        if (preset !== undefined) document.getElementById('rag-question').value = preset;
         const question = document.getElementById('rag-question').value.trim();
         const resultEl = document.getElementById('rag-result');
         const sourcesEl = document.getElementById('sources');
@@ -171,7 +99,9 @@
         } catch (err) { /* sources are best-effort */ }
     }
 
-    async function compare() {
+    async function compare(t1, t2) {
+        if (t1 !== undefined) document.getElementById('sim-text1').value = t1;
+        if (t2 !== undefined) document.getElementById('sim-text2').value = t2;
         const resultEl = document.getElementById('sim-result');
         const params = new URLSearchParams({
             text1: document.getElementById('sim-text1').value.trim(),
